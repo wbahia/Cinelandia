@@ -1,0 +1,49 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: cinelandia_db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Admin@123
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Admin@123' -Q 'SELECT 1' -C"]
+      interval: 10s    # Tenta a cada 10s
+      timeout: 10s
+      retries: 10      # Tenta até 10 vezes (dando 100 segundos de folga)
+      start_period: 30s # Ignora falhas nos primeiros 30s de boot
+
+  redis:
+    image: redis:alpine
+    container_name: cinelandia_cache
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: cinelandia_api
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=sqlserver://mssql:1433;database=master;user=sa;password=Admin@123;encrypt=true;trustServerCertificate=true;connectTimeout=30
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      mssql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: cinelandia_web
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend

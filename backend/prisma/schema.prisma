@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id         Int       @id @default(autoincrement())
+  nome       String    @db.VarChar(100)
+  email      String    @unique @db.VarChar(150)
+  cpf        String    @unique @db.Char(11)
+  telefone   String    @db.VarChar(20)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  reservas   Reserva[]
+
+  @@map("Cliente")
+}
+
+model Sala {
+  id         Int       @id @default(autoincrement())
+  numero     Int       @unique
+  capacidade Int
+  tipo       String    @db.VarChar(10) // '2D' | '3D' | 'IMAX'
+  assentos   Assento[]
+  sessoes    Sessao[]
+
+  @@map("Sala")
+}
+
+model Assento {
+  id              Int              @id @default(autoincrement())
+  idSala          Int              @map("id_sala")
+  fileira         String           @db.Char(1)
+  numero          Int
+  tipo            String           @db.VarChar(10) // 'NORMAL' | 'VIP' | 'PCD'
+  sala            Sala             @relation(fields: [idSala], references: [id])
+  reservaAssentos ReservaAssento[]
+
+  @@unique([idSala, fileira, numero])
+  @@map("Assento")
+}
+
+model Filme {
+  id           Int      @id @default(autoincrement())
+  titulo       String   @db.VarChar(200)
+  sinopse      String   @db.Text
+  duracaoMin   Int      @map("duracao_min")
+  genero       String   @db.VarChar(50)
+  classificacao String   @db.VarChar(5)
+  posterUrl    String   @db.Text @map("poster_url")
+  sessoes      Sessao[]
+
+  @@map("Filme")
+}
+
+model Sessao {
+  id            Int              @id @default(autoincrement())
+  idSala        Int              @map("id_sala")
+  idFilme       Int              @map("id_filme")
+  dataHora      DateTime         @map("data_hora")
+  valorUnitario Decimal          @map("valor_unitario") @db.Decimal(10, 2)
+  idioma        String           @db.VarChar(5) // 'DUB' | 'LEG' | 'NAC'
+  sala          Sala             @relation(fields: [idSala], references: [id])
+  filme         Filme            @relation(fields: [idFilme], references: [id])
+  reservas      Reserva[]
+  reservaAssentos ReservaAssento[]
+
+  @@unique([idSala, dataHora])
+  @@map("Sessao")
+}
+
+model Reserva {
+  id            Int              @id @default(autoincrement())
+  idCliente     Int              @map("id_cliente")
+  idSessao      Int              @map("id_sessao")
+  status        String           @db.VarChar(15) // 'PENDENTE' | 'CONFIRMADA' | 'CANCELADA'
+  totalAssentos Int              @map("total_assentos")
+  valorTotal    Decimal          @map("valor_total") @db.Decimal(10, 2)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  cliente       Cliente          @relation(fields: [idCliente], references: [id])
+  sessao        Sessao           @relation(fields: [idSessao], references: [id])
+  assentos      ReservaAssento[]
+
+  @@map("Reserva")
+}
+
+model ReservaAssento {
+  id        Int     @id @default(autoincrement())
+  idReserva Int     @map("id_reserva")
+  idAssento Int     @map("id_assento")
+  idSessao  Int     @map("id_sessao")
+  
+  // onDelete: NoAction e onUpdate: NoAction - erro no mssql
+  reserva   Reserva @relation(fields: [idReserva], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assento   Assento @relation(fields: [idAssento], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sessao    Sessao  @relation(fields: [idSessao], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([idSessao, idAssento])
+  @@map("ReservaAssento")
+}
