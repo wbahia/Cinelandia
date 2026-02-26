@@ -1,0 +1,12 @@
+1) Cache-Aside: 
+GET /filmes e GET /sessoes (ainda não implementado). 
+=> Salva o JSON no Redis com um TTL de 5 minutos.
+Ex.: await redis.set(cacheKey, JSON.stringify(filmes), 'EX', 300); //5 minutos de cache
+
+
+
+2) Distributed Lock (Atomicidade): 
+POST /reservas
+=> Redis é usado para "travar" o assento por 60 segundos  
+enquanto o usuário preenche os dados de pagamento (por exemplo). 
+Se ele não finalizar, o lock expira e o assento volta a ficar livre.
