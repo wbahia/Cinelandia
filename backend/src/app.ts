@@ -15,7 +15,11 @@ const swaggerOptions = {
         info: { title: 'Cinelandia API', version: '1.0.0', description: 'Cinelandia - Sistema de Reserva de Cinemas' },
         servers: [{ url: 'http://localhost:3000/api/v1' }]
     },
-    apis: ['./src/app.ts', './src/controllers/*.ts'], 
+    apis: [
+        './src/app.ts', 
+        './src/controllers/*.ts',
+        './src/docs/schemas.ts'
+    ], 
 };
 
 const specs = swaggerJsdoc(swaggerOptions);

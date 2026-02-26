@@ -4,25 +4,26 @@ import { GetFilmesUseCase } from '../use-cases/get-filmes.use-case';
 const getFilmesUseCase = new GetFilmesUseCase();
 
 /**
- * @openapi
+ * @swagger
  * /filmes:
  *   get:
- *     summary: Lista todos os filmes
- *     description: Retorna a lista de filmes em cartaz.
+ *     summary: Lista todos os filmes em cartaz
+ *     tags: [Filmes]
  *     responses:
  *       200:
- *         description: Sucesso
+ *         description: Lista de filmes retornada com sucesso
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   titulo:
- *                     type: string
+ *                 $ref: '#/components/schemas/Filme'
+ *       500:
+ *         description: Erro interno do servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErroGenerico'
  */
 export const getFilmes = async (req: Request, res: Response) => {
     try {

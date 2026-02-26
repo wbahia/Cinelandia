@@ -9,30 +9,30 @@ const createReservaUseCase = new CreateReservaUseCase(
 );
 
 /**
- * @openapi
+ * @swagger
  * /reservas:
  *   post:
  *     summary: Cria uma nova reserva de assentos
+ *     tags: [Reservas]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               clienteId:
- *                 type: integer
- *               sessaoId:
- *                 type: integer
- *               assentosIds:
- *                 type: array
- *                 items:
- *                   type: integer
+ *             $ref: '#/components/schemas/CreateReservaInput'
  *     responses:
  *       201:
  *         description: Reserva criada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Reserva'
  *       400:
- *         description: Erro de negócio (assento ocupado)
+ *         description: Erro de negócio (assento ocupado ou já vendido)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErroMessage'
  */
 export const postReserva = async (req: Request, res: Response) => {
   try {
