@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { getFilmes } from '../controllers/filme.controller';
+import { getFilmeById, getFilmes } from '../controllers/filme.controller';
 import { deleteReserva, getReserva, postReserva } from '../controllers/reserva.controller';
 import { getSessoes, getAssentosBySessao } from '../controllers/sessao.controller';
-import { postCliente } from '../controllers/cliente.controller';
+import { getReservasByCliente, postCliente } from '../controllers/cliente.controller';
 
 const router = Router();
 
@@ -10,9 +10,11 @@ const router = Router();
 
 //Filmes
 router.get('/filmes', getFilmes);
+router.get('/filmes/:id', getFilmeById);
 
 //Clientes
 router.post('/clientes', postCliente);
+router.get('/clientes/:id/reservas', getReservasByCliente);
 
 //Reservas
 router.post('/reservas', postReserva);
