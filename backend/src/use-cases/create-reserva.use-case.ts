@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma';
 import { redis } from '../lib/redis';
 import { AssentoResolver } from '../domain/interfaces/assento-resolver.interface';
 import { SessaoResolver } from '../domain/interfaces/sessao-resolver.interface';
+import { broadcastSessaoUpdate } from '../websocket/socket';
 
 export interface CreateReservaInput {
     clienteId: number;
@@ -19,17 +20,16 @@ export class CreateReservaUseCase {
     async execute(input: CreateReservaInput) {
         const { clienteId, sessaoId, assentosIds } = input;
 
-        // Resolve labels e sessão em paralelo via cache aside
         const [assentoMap, sessao] = await Promise.all([
             this.getAssentosByIds.execute(assentosIds),
             this.getSessaoById.execute(sessaoId)
         ]);
 
-        // Tenta lockar no redis para cada assento/sessao
+        //Seta lock no Redis para cada assento
         for (const assentoId of assentosIds) {
             const lockKey = `lock:sessao:${sessaoId}:assento:${assentoId}`;
-            const acquired = await redis.set(lockKey, "locked", "EX", 60, "NX"); //lock temporario de 60 segundos
-            
+            const acquired = await redis.set(lockKey, 'locked', 'EX', 60, 'NX');
+
             if (!acquired) {
                 const label = assentoMap.get(assentoId)?.label ?? String(assentoId);
                 throw new Error(`ASSENTO_OCUPADO: O assento ${label} já está sendo reservado por outra pessoa.`);
@@ -37,10 +37,8 @@ export class CreateReservaUseCase {
         }
 
         try {
-            // Transação no prisma (consistência no banco)
-            return await prisma.$transaction(async (tx) => {
-                
-                // double check no banco para garantir que os assentos ainda estão disponíveis (concorrência)
+            const reserva = await prisma.$transaction(async (tx) => {
+                // Double-check no DB
                 const ocupados = await tx.reservaAssento.findMany({
                     where: {
                         idSessao: sessaoId,
@@ -51,7 +49,7 @@ export class CreateReservaUseCase {
                 if (ocupados.length > 0) {
                     const labels = ocupados
                         .map(({ idAssento }) => assentoMap.get(idAssento)?.label ?? String(idAssento))
-                        .join(", ");
+                        .join(', ');
                     throw new Error(`ASSENTOS_INDISPONIVEIS: Os seguintes assentos já foram vendidos: ${labels}`);
                 }
 
@@ -65,24 +63,28 @@ export class CreateReservaUseCase {
                     }
                 });
 
-                // Vincula os Assentos a Reserva
                 const assentosData = assentosIds.map(id => ({
                     idReserva: reserva.id,
                     idAssento: id,
                     idSessao: sessaoId
                 }));
 
-                    await tx.reservaAssento.createMany({
-                    data: assentosData
-                });
+                await tx.reservaAssento.createMany({ data: assentosData });
 
                 return reserva;
             });
 
+            // Broadcast atualização para os clientes que estão assistindo a sessão
+            try {
+                broadcastSessaoUpdate(sessaoId, assentosIds, []);
+            } catch (_) {
+                console.log(`[WS] Falha no broadcast da atualização da sessão ${sessaoId} após reserva ${reserva.id}`);
+            }
+
+            return reserva;
         } catch (error) {
             throw error;
         } finally {
-            // Libera os locks no Redis
             for (const assentoId of assentosIds) {
                 const lockKey = `lock:sessao:${sessaoId}:assento:${assentoId}`;
                 await redis.del(lockKey);
