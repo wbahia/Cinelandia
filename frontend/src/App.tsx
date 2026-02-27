@@ -1,26 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Sidebar } from './components/Sidebar';
+import { ToastContainer } from './components/ToastContainer';
+import { DashboardPage } from './pages/DashboardPage';
+import { ClientesPage } from './pages/ClientesPage';
+import { FilmesPage } from './pages/FilmesPage';
+import { SessoesPage } from './pages/SessoesPage';
+import { NovaReservaPage } from './pages/NovaReservaPage';
 
-function App() {
-  const [filmes, setFilmes] = useState([])
-
-  useEffect(() => {
-    axios.get('http://localhost:3000/api/v1/filmes')
-      .then(res => setFilmes(res.data))
-      .catch(err => console.error("Erro ao buscar filmes", err))
-  }, [])
-
+export default function App() {
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>Cinelandia - Em Cartaz</h1>
-      <ul>
-        {filmes.map((f: any) => (
-          <li key={f.id}><strong>{f.titulo}</strong> - {f.genero}</li>
-        ))}
-      </ul>
-      {filmes.length === 0 && <p>Nenhum filme encontrado. Já rodou o seed?</p>}
-    </div>
-  )
+    <BrowserRouter>
+      <div style={{
+        display: 'flex',
+        minHeight: '100vh',
+        background: '#080812',
+        fontFamily: '"DM Sans", "Segoe UI", sans-serif',
+      }}>
+        <Sidebar />
+        <main style={{
+          flex: 1,
+          padding: '2rem',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        }}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/clientes" element={<ClientesPage />} />
+            <Route path="/filmes" element={<FilmesPage />} />
+            <Route path="/sessoes" element={<SessoesPage />} />
+            <Route path="/reservas/nova" element={<NovaReservaPage />} />
+          </Routes>
+        </main>
+      </div>
+      <ToastContainer />
+    </BrowserRouter>
+  );
 }
-
-export default App

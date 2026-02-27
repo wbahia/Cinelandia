@@ -39,9 +39,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use('/api/v1', router);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
     console.log(`Cinelandia rodando na porta ${PORT}`);
-    console.log(`Swagger rodando em http://localhost:${PORT}/api-docs`);
+    console.log(`Swagger disponível em http://localhost:${PORT}/api-docs`);
 });
 
 export { app, httpServer };

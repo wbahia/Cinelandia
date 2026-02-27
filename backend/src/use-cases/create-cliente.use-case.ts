@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { GetClientesUseCase } from './get-clientes.use-case';
 
 export interface CreateClienteInput {
     nome: string;
@@ -9,8 +10,11 @@ export interface CreateClienteInput {
 
 export class CreateClienteUseCase {
     async execute(data: CreateClienteInput) {
-        return await prisma.cliente.create({
-            data
-        });
+        const cliente = await prisma.cliente.create({ data });
+
+        // Invalida o cache da lista após criação
+        await GetClientesUseCase.invalidate();
+
+        return cliente;
     }
 }
