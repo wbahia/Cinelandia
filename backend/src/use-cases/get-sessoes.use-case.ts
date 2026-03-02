@@ -11,7 +11,12 @@ export class GetSessoesUseCase {
         const cacheKey = `sessoes:f:${filters.filmeId ?? 'all'}:d:${filters.data ?? 'any'}`;
 
         const cached = await redis.get(cacheKey);
-        if (cached) return JSON.parse(cached);
+        if (cached){
+            console.log(`Cache hit: sessoes: all`);
+            return JSON.parse(cached);
+        }
+
+        console.log('Cache miss: buscando sessões no banco');
 
         const sessoes = await prisma.sessao.findMany({
             where: {
